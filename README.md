@@ -10,18 +10,17 @@ This Pod runs in the `kube-system` namespace on k8s master nodes.
 
 ### Requirements
 
-- The virtual host in RabbitMQ for queues has to be `/`.
 - Namespace(s), deployment(s) or queue(s) defined in `AUTOSCALING` env var can't have `|` or `;` symbols in name(s).
 
 ### Env vars
 
 - `INTERVAL`: Seconds between checks in the pod autoscaling process described above (default 30s)
-- `RABBIT_HOST`: RabbitMQ host (e.g. http://rabbitmq.example.com)
+- `RABBIT_HOST`: RabbitMQ host (e.g. http://rabbitmq.example.com), if it running on custom port pass like localhost:15673.
 - `RABBIT_USER`: Username used for authentication with the RabbitMQ API (check `deploy.yml`, defaults to `rabbit-pod-autoscaler` secret, `rabbit-user` key)
 - `RABBIT_PASS`: Password used for authentication with the RabbitMQ API (check `deploy.yml`, defaults to `rabbit-pod-autoscaler` secret, `rabbit-pass` key)
 - `AUTOSCALING`: Contains min/max pods, messages handled per pod, deployment info and queue name in the following pattern:
-  - single deployment to autoscale: `<minPods>|<maxPods>|<mesgPerPod>|<k8s namespace>|<k8s deployment name>|<RabbitMQ queue name>`
-    - e.g. `3|10|5|development|example|example.queue`
+  - single deployment to autoscale: `<minPods>|<maxPods>|<mesgPerPod>|<k8s namespace>|<k8s deployment name>|<RabbitMQ vhost>|<RabbitMQ queue name>`
+    - e.g. `3|10|5|development|example|vhostexample|example.queue`
     - `mesgPerPod` represents the amount of RabbitMQ messages a Pod can process within the `INTERVAL` (env var). As an example, if a Pod needs 6s to process a message from RabbitMQ, the `mesgPerPod` value will be `INTERVAL (30s) / process time (6s) = 5`.
   - multiple deployments to autoscale: check example `deploy.yml`
 - `LOGS`: Logging and Slack notifications intensity. Errors are logged and notified on every option
