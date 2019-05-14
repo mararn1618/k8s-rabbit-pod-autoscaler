@@ -27,37 +27,37 @@ subjects:
   name: rabbit-pod-autoscaler
   namespace: kube-system
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
+  labels:
+    app: rabbit-pod-autoscaler
   name: rabbit-pod-autoscaler
   namespace: kube-system
 spec:
+  progressDeadlineSeconds: 600
+  revisionHistoryLimit: 10
   replicas: 1
+  selector:
+    matchLabels:
+      app: rabbit-pod-autoscaler
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
   template:
     metadata:
       labels:
         app: rabbit-pod-autoscaler
     spec:
-      nodeSelector:
-        kubernetes.io/role: master
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
       serviceAccountName: rabbit-pod-autoscaler
       containers:
-      - name: rabbit-pod-autoscaler
-        image: onfido/k8s-rabbit-pod-autoscaler
-        imagePullPolicy: Always
-        resources:
-          requests:
-            cpu: 100m
-            memory: 50Mi
-        env:
+      - env:
           - name: INTERVAL
             value: "30"
           - name: RABBIT_HOST
-            value: "http://rabbitmq.example.com"
+            value: "https://example.cloudamqp.com"
           - name: RABBIT_USER
             valueFrom:
               secretKeyRef:
@@ -70,9 +70,19 @@ spec:
                 key: rabbit-pass
           - name: AUTOSCALING
             value: >
-              3|10|5|development|example|vhost|example.queue;
-              3|5|3|development|example2|vhost|example2.queue
+              3|10|1|example.namespace|example.deployment|example.vhost|example.queue;
+              3|10|1|example.namespace|example.deployment1|example.vhost|example.queue
           - name: LOGS
             value: HIGH
-          - name: SLACK_HOOK
-            value: SLACK_HOOK
+        name: rabbit-pod-autoscaler
+        image: 'registry-intl.example.aliyuncs.com/example/k8s-rabbit-pod-autoscaler:latest'
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
